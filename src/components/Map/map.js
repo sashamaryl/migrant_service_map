@@ -13,6 +13,7 @@ import {
   removeDistanceMarkers,
   getBoundingBox,
 } from "./utilities.js";
+import {createClusterList} from "../ClusterProviderList/cluster-provider-list.js";
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoicmVmdWdlZXN3ZWxjb21lIiwiYSI6ImNqZ2ZkbDFiODQzZmgyd3JuNTVrd3JxbnAifQ.UY8Y52GQKwtVBXH2ssbvgw";
@@ -36,7 +37,7 @@ class Map extends Component {
     this.setSingleSourceInMap();
     this.addDistanceIndicatorLayer();
     this.findClustersInMap();
-
+    this.addClusterList();
     // Pull data from Mapbox style and initialize application state
     const providerFeatures = this.map.querySourceFeatures("composite", {
       sourceLayer: "Migrant_Services_-_MSM_Final_1"
@@ -48,7 +49,20 @@ class Map extends Component {
     this.setState({ loaded: true });
   };
 
-  componentDidMount() {
+  addClusterList = () => {
+      const clusterListStyle = "height: 100px; width: 40px; background-color: green";
+      let CLM = document.createElement("div");
+      CLM.id = "cluster-list";
+      CLM.classList.add("cluster-list-marker");
+      CLM.innerText = "a, b, c, d, e";
+      CLM.style = clusterListStyle;
+      let clusterListMarker = new mapboxgl.Marker(CLM);
+      clusterListMarker.setLngLat(this.props.search.mapCenter)
+  }
+
+
+
+componentDidMount() {
     const { mapCenter, coordinates } = this.props.search;
     const map = new mapboxgl.Map({
       container: "map", // container id
@@ -57,8 +71,10 @@ class Map extends Component {
       zoom: 11 // starting zoom
     });
 
+
     map.addControl(new mapboxgl.NavigationControl());
     map.on("load", this.onMapLoaded);
+
 
     this.map = map;
 
@@ -102,6 +118,7 @@ class Map extends Component {
       this.props.setSearchCenterCoordinates(center, 1, "");
     });
   }
+
 
   zoomToDistance = distance => {
     let resolution = window.screen.height;
@@ -201,6 +218,7 @@ class Map extends Component {
     });
 
     this.addClusterClickHandlerToMapLayer(clusterName);
+    this.addClusterMouseOverHandlerToMapLayer(clusterName);
   };
 
   setSingleSourceInMap = () => {
@@ -247,6 +265,16 @@ class Map extends Component {
         });
     });
   };
+
+  addClusterMouseOverHandlerToMapLayer = clusterName => {
+    this.map.on("click", clusterName, function(e) {
+      let mapView = this;
+      let features = mapView.queryRenderedFeatures(e.point, {
+        layers: [clusterName]
+      })
+      console.log(features);
+    })
+  }
 
   addClickHandlerToMapIdLayer = typeId => {
     let { displayProviderInformation, highlightedProviders } = this.props;
