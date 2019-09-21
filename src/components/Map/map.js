@@ -13,7 +13,7 @@ import {
   removeDistanceMarkers,
   getBoundingBox,
 } from "./utilities.js";
-import {createClusterList} from "../ClusterProviderList/cluster-provider-list.js";
+import { ClusterList } from "../ClusterProviderList/cluster-provider-list.js";
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoicmVmdWdlZXN3ZWxjb21lIiwiYSI6ImNqZ2ZkbDFiODQzZmgyd3JuNTVrd3JxbnAifQ.UY8Y52GQKwtVBXH2ssbvgw";
@@ -38,6 +38,7 @@ class Map extends Component {
     this.addDistanceIndicatorLayer();
     this.findClustersInMap();
     this.addClusterList();
+    createClusterList();
     // Pull data from Mapbox style and initialize application state
     const providerFeatures = this.map.querySourceFeatures("composite", {
       sourceLayer: "Migrant_Services_-_MSM_Final_1"
@@ -49,15 +50,22 @@ class Map extends Component {
     this.setState({ loaded: true });
   };
 
+createClusterList = () => {
+    // const clusterListStyle = "height: 100px; width: 40px; background-color: green";
+    // CLM.classList.add("cluster-list-marker");
+    // CLM.id = "cluster-list";
+    // CLM.innerText = "a, b, c, d, e";
+    // CLM.style = clusterListStyle;
+
+}
+
   addClusterList = () => {
-      const clusterListStyle = "height: 100px; width: 40px; background-color: green";
-      let CLM = document.createElement("div");
-      CLM.id = "cluster-list";
-      CLM.classList.add("cluster-list-marker");
-      CLM.innerText = "a, b, c, d, e";
-      CLM.style = clusterListStyle;
-      let clusterListMarker = new mapboxgl.Marker(CLM);
-      clusterListMarker.setLngLat(this.props.search.mapCenter)
+    let CLM = document.createElement("div");
+    CLM.id = "clusterListMarker";
+    const clusterListMarker =  new mapboxgl.Marker(CLM);
+    clusterListMarker.setLngLat(this.props.search.mapCenter).addTo(this.map);
+
+    ReactDOM.render(ClusterList, document.getElementById("clusterListMarker"));
   }
 
 
