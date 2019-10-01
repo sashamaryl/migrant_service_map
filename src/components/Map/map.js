@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import ReactDOM from 'react-dom';
 import mapboxgl from "mapbox-gl";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import "./map.css";
@@ -29,7 +30,7 @@ class Map extends Component {
   }
 
   onMapLoaded = () => {
-    const { initializeProviders } = this.props;
+    const {initializeProviders} = this.props;
 
     // Initialize static sources and layers. Layers for provider icons are
     // added as they're enabled in the UI. Layers are drawn in the order they
@@ -37,9 +38,6 @@ class Map extends Component {
     this.setSingleSourceInMap();
     this.addDistanceIndicatorLayer();
     this.findClustersInMap();
-    this.addClusterList();
-    createClusterList();
-    // Pull data from Mapbox style and initialize application state
     const providerFeatures = this.map.querySourceFeatures("composite", {
       sourceLayer: "Migrant_Services_-_MSM_Final_1"
     });
@@ -47,31 +45,17 @@ class Map extends Component {
     initializeProviders(normalizedProviders);
 
     this.loadProviderTypeImage(typeImages);
-    this.setState({ loaded: true });
+    this.setState({loaded: true});
   };
 
-createClusterList = () => {
-    // const clusterListStyle = "height: 100px; width: 40px; background-color: green";
-    // CLM.classList.add("cluster-list-marker");
-    // CLM.id = "cluster-list";
-    // CLM.innerText = "a, b, c, d, e";
-    // CLM.style = clusterListStyle;
 
-}
-
-  addClusterList = () => {
-    let CLM = document.createElement("div");
-    CLM.id = "clusterListMarker";
-    const clusterListMarker =  new mapboxgl.Marker(CLM);
-    clusterListMarker.setLngLat(this.props.search.mapCenter).addTo(this.map);
-
-    ReactDOM.render(ClusterList, document.getElementById("clusterListMarker"));
+  addClusterList = (clusterCenter, list) => {
+    ReactDOM.render(<ClusterList list={list} />, document.getElementById("clusterList"));
   }
 
 
-
-componentDidMount() {
-    const { mapCenter, coordinates } = this.props.search;
+  componentDidMount() {
+    const {mapCenter, coordinates} = this.props.search;
     const map = new mapboxgl.Map({
       container: "map", // container id
       style: "mapbox://styles/refugeeswelcome/cjxmgxala1t5b1dtea37lbi2p", // stylesheet location
@@ -105,7 +89,7 @@ componentDidMount() {
 
     geocoder.on("result", ev => {
       // ev.result contains id, place_name, text
-      let { geometry, id, text } = ev.result;
+      let {geometry, id, text} = ev.result;
       let zoom;
       if (!this.props.filters.distance) {
         zoom = this.zoomToDistance(1.5);
@@ -133,9 +117,9 @@ componentDidMount() {
     let latitude = this.props.search.coordinates[1];
     let milesPerPixel = (distance * 8) / resolution;
     return (
-      Math.log2(
-        (24901 * Math.cos((latitude * Math.PI) / 180)) / milesPerPixel
-      ) - 8
+        Math.log2(
+            (24901 * Math.cos((latitude * Math.PI) / 180)) / milesPerPixel
+        ) - 8
     );
   };
 
@@ -163,8 +147,8 @@ componentDidMount() {
           visibility: "visible"
         }
       });
-    this.addClickHandlerToMapIdLayer(typeId);
-    this.addHoverHandlerToMapIdLayer(typeId);
+      this.addClickHandlerToMapIdLayer(typeId);
+      this.addHoverHandlerToMapIdLayer(typeId);
     }
   };
 
@@ -186,7 +170,6 @@ componentDidMount() {
       })
     }
   };
-
 
   findClustersInMap = () => {
     this.map.addLayer({
@@ -213,7 +196,7 @@ componentDidMount() {
         "text-field": "{point_count_abbreviated}",
         "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
         "text-size": 26,
-        "text-offset": [0,-0.3],
+        "text-offset": [0, -0.3],
         "icon-allow-overlap": true,
         "icon-ignore-placement": true,
         visibility: "visible"
@@ -222,10 +205,11 @@ componentDidMount() {
         "text-color": "black",
         "text-halo-color": "#ffffff",
         "text-halo-width": 2
-      }
+      },
     });
 
-    this.addClusterClickHandlerToMapLayer(clusterName);
+    // this.addClusterClickHandlerToMapLayer(clusterName);
+    this.addClusterClickHandlerToMapLayer("clusterCircle");
     this.addClusterMouseOverHandlerToMapLayer(clusterName);
   };
 
@@ -246,49 +230,63 @@ componentDidMount() {
 
   loadProviderTypeImage = images => {
     images.map(typeImage =>
-      this.map.loadImage(typeImage.image, (error, image) => {
-        if (error) throw error;
-        this.map.addImage(`${typeImage.type}icon`, image);
-      })
+        this.map.loadImage(typeImage.image, (error, image) => {
+          if (error) throw error;
+          this.map.addImage(`${typeImage.type}icon`, image);
+        })
     );
   };
 
   addClusterClickHandlerToMapLayer = clusterName => {
-    this.map.on("click", clusterName, function(e) {
-      let mapView = this;
-      let features = mapView.queryRenderedFeatures(e.point, {
+    this.map.on("click", clusterName, e => {
+      // let mapView = this;
+      let features = this.map.queryRenderedFeatures(e.point, {
         layers: [clusterName]
       });
-
+      let clusterSource = this.map.getSource("displayData");
+      let sourceFeatures = this.map.querySourceFeatures(clusterSource);
       let clusterId = features[0].properties.cluster_id;
-      mapView
-        .getSource("displayData")
-        .getClusterExpansionZoom(clusterId, function(err, zoom) {
-          if (err) return;
-
-          mapView.easeTo({
-            center: features[0].geometry.coordinates,
-            zoom: zoom
-          });
-        });
+      this.map
+          .getSource("displayData")
+          // .getClusterExpansionZoom(clusterId, function (err, zoom) {
+          //   if (err) return;
+          //   this.map.easeTo({
+          //     center: features[0].geometry.coordinates,
+          //     zoom: zoom
+          //   });
+          // });
     });
   };
 
   addClusterMouseOverHandlerToMapLayer = clusterName => {
-    this.map.on("click", clusterName, function(e) {
-      let mapView = this;
-      let features = mapView.queryRenderedFeatures(e.point, {
-        layers: [clusterName]
-      })
-      console.log(features);
-    })
-  }
+    const clusterEl = document.createElement("div");
+    clusterEl.id = "clusterList";
+
+    const clusterListMarker = new mapboxgl.Marker({
+      element: clusterEl,
+      anchor: "bottom",
+      offset: [0, -15],
+    });
+
+    this.map.on("mouseover", clusterName, e => {
+      const clusterId = e.features[0].id;
+      const mySource = this.map.getSource("displayData");
+      const clusterLngLat = e.lngLat;
+
+      mySource.getClusterLeaves(clusterId, 100, 0, (error, children) => {
+        const childList = children.map(child => child.properties);
+        clusterListMarker.setLngLat(clusterLngLat).addTo(this.map);
+        this.addClusterList(clusterLngLat, childList);
+      });
+    });
+  };
+
 
   addClickHandlerToMapIdLayer = typeId => {
-    let { displayProviderInformation, highlightedProviders } = this.props;
+    let {displayProviderInformation, highlightedProviders} = this.props;
     this.map.on("click", typeId, e => {
       const providerElement = document.getElementById(
-        `provider-${e.features[0].properties.id}`
+          `provider-${e.features[0].properties.id}`
       );
       if (typeId !== "highlightedProviders" && providerElement) {
         displayProviderInformation(e.features[0].properties.id);
@@ -321,7 +319,7 @@ componentDidMount() {
   };
 
   geoJSONFeatures = () => {
-    let { providersList, highlightedProviders, search, providers } = this.props;
+    let {providersList, highlightedProviders, search, providers} = this.props;
     const showSavedProviders = search.selectedTabIndex === 1;
     const savedProviderIds = providers.savedProviders;
 
@@ -329,8 +327,8 @@ componentDidMount() {
     providersList.forEach(typeId => {
       typeId.providers.forEach(provider => {
         provider.highlighted = highlightedProviders.includes(provider.id)
-          ? "highlighted"
-          : "not-highlighted";
+            ? "highlighted"
+            : "not-highlighted";
 
         if (!showSavedProviders || savedProviderIds.includes(provider.id)) {
           // Show only saved providers if the saved provider tab is selected, otherwise show everything.
@@ -345,8 +343,8 @@ componentDidMount() {
     const distance = this.props.filters.distance;
     const searchCoordinates = this.props.search.coordinates;
     if (
-      distance === prevProps.filters.distance &&
-      searchCoordinates === prevProps.search.coordinates
+        distance === prevProps.filters.distance &&
+        searchCoordinates === prevProps.search.coordinates
     ) {
       // Do not render if the relevant props have not changed. This includes
       // the first render of this component, so the marker is not shown until
@@ -359,26 +357,26 @@ componentDidMount() {
     // If no distance filter is set, display all distance indicators.
     let distanceIndicatorRadii = distance ? [distance] : distances.sort();
     let userSearch = ![1, "default"].includes(
-      this.props.search.currentLocation
+        this.props.search.currentLocation
     );
 
     if (distance || userSearch) {
       const centerMarker = createCenterMarker();
-      const mapPin = new mapboxgl.Marker({ element: centerMarker })
-        .setLngLat(searchCoordinates)
-        .addTo(this.map);
+      const mapPin = new mapboxgl.Marker({element: centerMarker})
+          .setLngLat(searchCoordinates)
+          .addTo(this.map);
       this.markerList.push(mapPin);
 
       // Create distance labels drawn from smallest to largest
       const labels = distanceIndicatorRadii.map((radius, i) => {
         const radiusOffset = transformTranslate(
-          point(searchCoordinates),
-          radius,
-          90,
-          { units: "miles" }
+            point(searchCoordinates),
+            radius,
+            90,
+            {units: "miles"}
         );
         const distanceMarker = createDistanceMarker(radius);
-        const marker = new mapboxgl.Marker({ element: distanceMarker });
+        const marker = new mapboxgl.Marker({element: distanceMarker});
         this.markerList.push(marker);
         return marker.setLngLat(radiusOffset.geometry.coordinates);
       });
@@ -392,19 +390,19 @@ componentDidMount() {
     const innerColor = "hsla(317, 100%, 84%, .1)";
     const outerColor = "hsla(317, 100%, 84%, .15)";
     const circles = distanceIndicatorRadii
-      .slice()
-      .reverse()
-      .map((radius, i) =>
-        circle(searchCoordinates, radius, {
-          steps: 100,
-          units: "miles",
-          properties: { color: i === 0 ? outerColor : innerColor }
-        })
-      );
+        .slice()
+        .reverse()
+        .map((radius, i) =>
+            circle(searchCoordinates, radius, {
+              steps: 100,
+              units: "miles",
+              properties: {color: i === 0 ? outerColor : innerColor}
+            })
+        );
 
     this.map
-      .getSource("distance-indicator-source")
-      .setData({ type: "FeatureCollection", features: circles });
+        .getSource("distance-indicator-source")
+        .setData({type: "FeatureCollection", features: circles});
   };
 
   updateZoom = distance => {
@@ -463,24 +461,24 @@ componentDidMount() {
 
   getEnabledHighlightedProviders = (providersList, highlightedProviders) => {
     const enabledProviderIds = new Set(
-      providersList.flatMap(listByType =>
-        listByType.providers.map(provider => provider.id)
-      )
+        providersList.flatMap(listByType =>
+            listByType.providers.map(provider => provider.id)
+        )
     );
     return highlightedProviders.filter(id => enabledProviderIds.has(id));
   };
 
   zoomToFit = providerIds => {
     providerIds =
-      providerIds ||
-      this.getEnabledHighlightedProviders(
-        this.props.providersList,
-        this.props.highlightedProviders
-      );
+        providerIds ||
+        this.getEnabledHighlightedProviders(
+            this.props.providersList,
+            this.props.highlightedProviders
+        );
     if (providerIds.length > 0) {
       this.map.fitBounds(getBoundingBox(this.props.providers, providerIds), {
         // Left padding accounts for provider list UI.
-        padding: { top: 100, bottom: 100, left: 450, right: 100 },
+        padding: {top: 100, bottom: 100, left: 450, right: 100},
         duration: 2000,
         maxZoom: 13,
         linear: false
@@ -502,23 +500,23 @@ componentDidMount() {
     const prevIds = this.getEnabledHighlightedProviders(
         prevProps.providersList,
         prevProps.highlightedProviders
-      ),
-      currIds = this.getEnabledHighlightedProviders(
-        this.props.providersList,
-        this.props.highlightedProviders
-      ),
-      newIds = currIds.filter(id => !prevIds.includes(id));
+        ),
+        currIds = this.getEnabledHighlightedProviders(
+            this.props.providersList,
+            this.props.highlightedProviders
+        ),
+        newIds = currIds.filter(id => !prevIds.includes(id));
     if (newIds.length === 0) {
       // The set of selected providers stayed the same or got smaller, no need to zoom.
       return;
     }
     const newFeatureBounds = getBoundingBox(this.props.providers, newIds),
-      mapBounds = this.map.getBounds();
+        mapBounds = this.map.getBounds();
     if (
-      newFeatureBounds.getNorth() > mapBounds.getNorth() ||
-      newFeatureBounds.getEast() > mapBounds.getEast() ||
-      newFeatureBounds.getSouth() < mapBounds.getSouth() ||
-      newFeatureBounds.getWest() < mapBounds.getWest()
+        newFeatureBounds.getNorth() > mapBounds.getNorth() ||
+        newFeatureBounds.getEast() > mapBounds.getEast() ||
+        newFeatureBounds.getSouth() < mapBounds.getSouth() ||
+        newFeatureBounds.getWest() < mapBounds.getWest()
     ) {
       this.zoomToFit(currIds);
     }
@@ -529,14 +527,14 @@ componentDidMount() {
       const features = this.geoJSONFeatures();
       this.setSourceFeatures(features);
       this.props.providerTypes.allIds.map(typeId =>
-        this.findLayerInMap(typeId)
+          this.findLayerInMap(typeId)
       );
       this.setSpecialLayerInMap("highlighted", "highlighted");
       this.updatePinAndDistanceIndicator(prevProps);
       this.zoomToShowNewProviders(prevProps);
       if (
-        this.props.filters.distance &&
-        this.props.filters.distance !== prevProps.filters.distance
+          this.props.filters.distance &&
+          this.props.filters.distance !== prevProps.filters.distance
       ) {
         this.map.flyTo({
           center: this.props.search.coordinates,
@@ -544,10 +542,10 @@ componentDidMount() {
         });
       }
       if (
-        this.props.search.flyToProviderKey !== prevProps.search.flyToProviderKey
+          this.props.search.flyToProviderKey !== prevProps.search.flyToProviderKey
       ) {
-        const { flyToProviderId } = this.props.search;
-        const { coordinates } = this.props.providers.byId[flyToProviderId];
+        const {flyToProviderId} = this.props.search;
+        const {coordinates} = this.props.providers.byId[flyToProviderId];
         this.map.flyTo({
           center: coordinates,
           zoom: 15
@@ -559,12 +557,13 @@ componentDidMount() {
     }
   }
 
+
   componentWillUnmount() {
     this.map.remove();
   }
 
   render() {
-    return <div id="map" className="map" />;
+    return <div id="map" className="map"/>;
   }
 }
 
