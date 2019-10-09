@@ -41,7 +41,11 @@ const typeImages = [
   },
   {
     type: "clusters",
-    image: require("./icons/pin-blank-clusters.png")
+    image: require("./icons/pin-blank-clusters_multi.png")
+  },
+  {
+    type: "clusters-highlight",
+    image: require("./icons/pin-blank-clusters_multi-highlights.png")
   },
   {
     type: "pin-mini",
