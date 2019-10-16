@@ -46,6 +46,13 @@ class AnimatedMarker {
     this.popup.remove();
   }
 
+  bounceAgain() {
+    const markerIcon = this.marker.getElement().firstChild;
+    markerIcon.classList.add("bounceAgain");
+    const markerIconHighlight = markerIcon.nextSibling.firstChild;
+    markerIconHighlight.classList.add("bounceAgain");
+  }
+
   createMarkerElement = (providerId, typeId) => {
     const marker = document.createElement("div");
     marker.id = `marker-${providerId}`;

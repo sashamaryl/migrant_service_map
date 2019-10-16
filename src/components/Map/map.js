@@ -56,6 +56,7 @@ class Map extends Component {
     this.setSingleSourceInMap();
     this.addDistanceIndicatorLayer();
     this.findClustersInMap();
+
     // Pull data from Mapbox style and initialize application state
     const providerFeatures = this.map.querySourceFeatures("composite", {
       sourceLayer: "Migrant_Services_-_MSM_Final_1"
@@ -78,6 +79,7 @@ class Map extends Component {
 
     map.addControl(new mapboxgl.NavigationControl());
     map.on("load", this.onMapLoaded);
+
     this.map = map;
 
     const coordinateObject = {
@@ -341,27 +343,13 @@ class Map extends Component {
       return
     }
     const provider = providers.byId[newSelection[0]];
-    const marker = new AnimatedMarker(provider);// AnimatedMarker(provider.id, provider.typeId);
+    const marker = new AnimatedMarker(provider);
     marker.addTo(this.map);
+    this.map.on("zoomend", () => {
+      marker.bounceAgain();
+    });
     this.selectionMarkers.push({providerId: provider.id, marker: marker});
    }
-
-  removeDeselectedMarkers = () => {
-    let {highlightedProviders} = this.props;
-    //retrieve the saved marker objects, and remove any marker no longer in highlighted providers
-    const deselectedProviders = this.selectionMarkers.filter(
-        provider => highlightedProviders.includes(provider.providerId) === false
-    );
-    deselectedProviders.forEach(provider => {
-      provider.marker.remove();
-      provider.marker.getPopup().remove();
-    });
-
-    this.selectionMarkers = this.selectionMarkers.filter(
-        provider => deselectedProviders.includes(provider.providerId) === false
-    );
-
-  };
 
   createPopup = () => {
     return new mapboxgl.Popup({
